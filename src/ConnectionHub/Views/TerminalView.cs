@@ -251,6 +251,12 @@ public sealed class TerminalView : Grid, ISessionView
         {
             Fail(session, ex.Message);
         }
+        catch (SshAuthenticationException ex) when (_entry.Ssh.AuthMode == SshAuthMode.KeyboardInteractive
+                                                    && ex.Message.Contains("No suitable authentication method", StringComparison.OrdinalIgnoreCase))
+        {
+            Fail(session, "De server ondersteunt geen keyboard-interactive aanmelding. Kies bij deze verbinding de methode " +
+                          "'Automatisch' of 'Wachtwoord'. (" + ex.Message + ")");
+        }
         catch (Exception ex)
         {
             Fail(session, ex.Message);

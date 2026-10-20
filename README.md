@@ -17,7 +17,7 @@ Een moderne Windows-applicatie om **RDP**- en **SSH**-sessies te beheren en te o
 
 ### SSH
 - Volwaardige terminal (xterm.js in WebView2, 256 kleuren, klikbare links, 10.000 regels scrollback).
-- Authenticatie: wachtwoord, public key (OpenSSH/PuTTY, met passphrase) en **keyboard-interactive**.
+- Authenticatie: wachtwoord, public key (OpenSSH/PuTTY, met passphrase) en **keyboard-interactive** (standaard voor nieuwe SSH-verbindingen).
 - **2FA / MFA**: OTP-codes (Google Authenticator, Microsoft Authenticator), Duo, RADIUS-tokens enz. worden via keyboard-interactive gevraagd in een eigen dialoog. Een opgeslagen wachtwoord wordt automatisch ingevuld, zodat je alleen de verificatiecode hoeft in te voeren. Ook combinaties als *public key + OTP* (partial success) werken.
 - Controle van hostsleutels (SHA256-vingerafdruk) met waarschuwing bij een gewijzigde sleutel.
 - Kopiëren bij selecteren, plakken met rechtermuisknop, `Ctrl+Shift+C` / `Ctrl+Shift+V`.

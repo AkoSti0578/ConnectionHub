@@ -60,7 +60,7 @@ public sealed class RdpSettings
 
 public sealed class SshSettings
 {
-    public SshAuthMode AuthMode { get; set; } = SshAuthMode.Auto;
+    public SshAuthMode AuthMode { get; set; } = SshAuthMode.KeyboardInteractive;
     public string PrivateKeyPath { get; set; } = string.Empty;
     public string? ProtectedKeyPassphrase { get; set; }
     public string TerminalType { get; set; } = "xterm-256color";

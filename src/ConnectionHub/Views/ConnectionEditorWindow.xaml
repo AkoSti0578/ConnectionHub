@@ -182,7 +182,7 @@
                             <ComboBox x:Name="AuthCombo">
                                 <ComboBoxItem Content="Automatisch (sleutel → wachtwoord → keyboard-interactive / 2FA)" />
                                 <ComboBoxItem Content="Wachtwoord (+ 2FA via keyboard-interactive)" />
-                                <ComboBoxItem Content="Keyboard-interactive (bijv. wachtwoord + OTP-code)" />
+                                <ComboBoxItem Content="Keyboard-interactive (bijv. wachtwoord + OTP-code) – standaard" />
                                 <ComboBoxItem Content="Public key (+ 2FA via keyboard-interactive)" />
                             </ComboBox>
                             <TextBlock Style="{StaticResource Caption}" Margin="0,6,0,0" TextWrapping="Wrap"
