@@ -691,7 +691,6 @@
         <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
         <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
         <Setter Property="FontSize" Value="13" />
-        <Setter Property="WindowStartupLocation" Value="CenterOwner" />
         <Setter Property="ShowInTaskbar" Value="False" />
         <Setter Property="ResizeMode" Value="NoResize" />
         <Setter Property="SizeToContent" Value="Height" />

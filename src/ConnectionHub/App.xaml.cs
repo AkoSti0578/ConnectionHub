@@ -48,7 +48,15 @@ public partial class App : Application
             // Logging must never crash the app.
         }
 
-        MessageWindow.Show(Current?.MainWindow, "Onverwachte fout", e.Exception.Message, MessageKind.Error, "OK");
         e.Handled = true;
+        try
+        {
+            MessageWindow.Show(Current?.MainWindow, "Onverwachte fout", e.Exception.Message, MessageKind.Error, "OK");
+        }
+        catch (Exception)
+        {
+            // The themed dialog itself may be what is failing; fall back to the system message box.
+            MessageBox.Show(e.Exception.Message, "Connection Hub – onverwachte fout", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 }
