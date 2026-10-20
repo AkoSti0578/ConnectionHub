@@ -63,7 +63,7 @@
       <Component Id="StartMenuShortcut">
         <Shortcut Id="StartMenuShortcutLink" Name="Connection Hub" Description="RDP en SSH sessiebeheer"
                   Target="[INSTALLFOLDER]ConnectionHub.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon.ico" />
-        <RegistryValue Root="HKLM" Key="Software\Connection Hub" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+        <RegistryValue Root="HKCU" Key="Software\Connection Hub" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </StandardDirectory>
 
@@ -71,7 +71,7 @@
       <Component Id="DesktopShortcut">
         <Shortcut Id="DesktopShortcutLink" Name="Connection Hub" Description="RDP en SSH sessiebeheer"
                   Target="[INSTALLFOLDER]ConnectionHub.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon.ico" />
-        <RegistryValue Root="HKLM" Key="Software\Connection Hub" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+        <RegistryValue Root="HKCU" Key="Software\Connection Hub" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </StandardDirectory>
   </Fragment>
