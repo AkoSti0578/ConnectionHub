@@ -28,6 +28,8 @@ public sealed class RdpSessionView : Grid, ISessionView
     private bool _loggedIn;
     private bool _disposed;
     private bool _dpiHooked;
+    private bool _forceDisplayUpdate;
+    private int _displayRetries;
     private int _lastWidth, _lastHeight;
 
     public RdpSessionView(ConnectionEntry entry)
@@ -63,22 +65,29 @@ public sealed class RdpSessionView : Grid, ISessionView
         _resizeTimer.Tick += (_, _) =>
         {
             _resizeTimer.Stop();
-            UpdateRemoteResolution();
+            if (UpdateRemoteResolution(_forceDisplayUpdate))
+            {
+                _forceDisplayUpdate = false;
+                _displayRetries = 0;
+            }
+            else if (_displayRetries-- > 0)
+            {
+                // The display-control channel is often not ready right after logon; try again shortly.
+                _resizeTimer.Interval = TimeSpan.FromSeconds(1);
+                _resizeTimer.Start();
+            }
         };
 
         SizeChanged += (_, _) =>
         {
             if (_loggedIn && _entry.Rdp.ScalingMode == RdpScalingMode.DynamicResolution)
-            {
-                _resizeTimer.Stop();
-                _resizeTimer.Start();
-            }
+                RequestDisplayUpdate(force: false);
         };
         Loaded += (_, _) =>
         {
             if (Window.GetWindow(this) is { } window && !_dpiHooked)
             {
-                window.DpiChanged += (_, _) => UpdateRemoteResolution(force: true);
+                window.DpiChanged += (_, _) => RequestDisplayUpdate(force: true);
                 _dpiHooked = true;
             }
             if (_connectRequested) Dispatcher.BeginInvoke(ConnectCore, DispatcherPriority.Loaded);
@@ -234,40 +243,66 @@ public sealed class RdpSessionView : Grid, ISessionView
     {
         _loggedIn = true;
         Report(SessionState.Connected, $"Verbonden met {_entry.Host}");
+        // The session already starts at the tab size; only resize if the tab changed while connecting.
+        // Never resize immediately: the display-control channel needs a moment after logon.
         if (_entry.Rdp.ScalingMode == RdpScalingMode.DynamicResolution)
-            Dispatcher.BeginInvoke(() => UpdateRemoteResolution(force: true), DispatcherPriority.Background);
+            RequestDisplayUpdate(force: false, delay: TimeSpan.FromSeconds(2), retries: 5);
+    }
+
+    private void RequestDisplayUpdate(bool force, TimeSpan? delay = null, int retries = 3)
+    {
+        if (!_loggedIn || _disposed) return;
+        _forceDisplayUpdate |= force;
+        _displayRetries = Math.Max(_displayRetries, retries);
+        _resizeTimer.Stop();
+        _resizeTimer.Interval = delay ?? TimeSpan.FromMilliseconds(450);
+        _resizeTimer.Start();
     }
 
     private void OnDisconnected(int reason)
     {
+        var wasLoggedIn = _loggedIn;
         _loggedIn = false;
+        _resizeTimer.Stop();
+
+        var extended = 0;
+        var description = string.Empty;
+        try { extended = (int)_rdp.Ocx.ExtendedDisconnectReason; } catch (Exception) { }
+        try { description = ((string)_rdp.Ocx.GetErrorDescription((uint)reason, (uint)extended))?.Trim() ?? string.Empty; } catch (Exception) { }
+        Log($"Disconnected from {_entry.Host}:{_entry.Port} reason={reason} extended={extended} loggedIn={wasLoggedIn} userRequested={!_connectRequested} \"{description}\"");
+
         // 1 = local disconnect, 2 = remote disconnect by user, 3 = remote disconnect by server (logoff)
-        if (reason is 0 or 1 or 2 or 3 || !_connectRequested)
+        if (!_connectRequested || reason is 1 or 2)
         {
             Report(SessionState.Disconnected, "Verbinding verbroken");
             return;
         }
 
-        string message;
+        var text = string.IsNullOrWhiteSpace(description) ? "Verbinding verbroken." : description;
+        Report(reason == 3 ? SessionState.Disconnected : SessionState.Failed, $"{text} (code {reason}/{extended})");
+    }
+
+    private static void Log(string message)
+    {
         try
         {
-            message = (string)_rdp.Ocx.GetErrorDescription((uint)reason, (uint)(int)_rdp.Ocx.ExtendedDisconnectReason);
+            var dir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ConnectionHub");
+            System.IO.Directory.CreateDirectory(dir);
+            System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "rdp.log"), $"[{DateTime.Now:O}] {message}\n");
         }
         catch (Exception)
         {
-            message = string.Empty;
+            // Diagnostics only.
         }
-        if (string.IsNullOrWhiteSpace(message)) message = $"Verbinding verbroken (code {reason}).";
-        Report(SessionState.Failed, message.Trim());
     }
 
-    /// <summary>Resizes the remote desktop to the current tab size (dynamic resolution).</summary>
-    private void UpdateRemoteResolution(bool force = false)
+    /// <summary>Resizes the remote desktop to the current tab size (dynamic resolution). Returns false when it should be retried.</summary>
+    private bool UpdateRemoteResolution(bool force = false)
     {
-        if (!_loggedIn || _disposed || _entry.Rdp.ScalingMode != RdpScalingMode.DynamicResolution) return;
+        if (!_loggedIn || _disposed || _entry.Rdp.ScalingMode != RdpScalingMode.DynamicResolution) return true;
 
         var (width, height) = CurrentPixelSize();
-        if (!force && width == _lastWidth && height == _lastHeight) return;
+        if (!force && width == _lastWidth && height == _lastHeight) return true;
 
         var (desktopScale, deviceScale) = ScaleFactors();
         var dpi = VisualTreeHelper.GetDpi(this).PixelsPerInchX;
@@ -279,20 +314,13 @@ public sealed class RdpSessionView : Grid, ISessionView
             _rdp.Ocx.UpdateSessionDisplaySettings((uint)width, (uint)height, physicalWidth, physicalHeight, 0u, (uint)desktopScale, (uint)deviceScale);
             _lastWidth = width;
             _lastHeight = height;
+            return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Hosts without display-control support: fall back to a reconnect with the new size.
-            try
-            {
-                _rdp.Ocx.Reconnect((uint)width, (uint)height);
-                _lastWidth = width;
-                _lastHeight = height;
-            }
-            catch (Exception)
-            {
-                // Resolution stays as is.
-            }
+            // No Reconnect() fallback: it ends the session on hosts that do not allow it.
+            Log($"UpdateSessionDisplaySettings({width}x{height}) failed: {ex.Message}");
+            return false;
         }
     }
 
