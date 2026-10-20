@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <title>Terminal</title>
+  <link rel="stylesheet" href="xterm.css">
+  <style>
+    html, body { margin: 0; height: 100%; background: #0f1117; overflow: hidden; }
+    #terminal { position: absolute; inset: 6px 4px 4px 10px; }
+    .xterm .xterm-viewport { scrollbar-width: thin; scrollbar-color: #3a3f4f transparent; }
+  </style>
+</head>
+<body>
+  <div id="terminal"></div>
+  <script src="xterm.js"></script>
+  <script src="addon-fit.js"></script>
+  <script src="addon-web-links.js"></script>
+  <script>
+    (function () {
+      const host = window.chrome && window.chrome.webview;
+      const send = (msg) => host && host.postMessage(msg);
+      const params = new URLSearchParams(location.search);
+
+      const term = new Terminal({
+        cursorBlink: true,
+        allowProposedApi: true,
+        scrollback: 10000,
+        fontFamily: "'Cascadia Mono', 'Cascadia Code', Consolas, 'Courier New', monospace",
+        fontSize: parseInt(params.get('fontSize') || '14', 10),
+        theme: {
+          background: '#0f1117', foreground: '#e6e8ef', cursor: '#8b9cff', cursorAccent: '#0f1117',
+          selectionBackground: '#3b4a8a99',
+          black: '#1b1e28', red: '#f7768e', green: '#9ece6a', yellow: '#e0af68',
+          blue: '#7aa2f7', magenta: '#bb9af7', cyan: '#7dcfff', white: '#c0caf5',
+          brightBlack: '#565f89', brightRed: '#ff899d', brightGreen: '#b9f27c', brightYellow: '#ffc777',
+          brightBlue: '#8db0ff', brightMagenta: '#c7a9ff', brightCyan: '#a4daff', brightWhite: '#ffffff'
+        }
+      });
+
+      const fit = new FitAddon.FitAddon();
+      term.loadAddon(fit);
+      term.loadAddon(new WebLinksAddon.WebLinksAddon((event, uri) => send({ type: 'openLink', uri })));
+      term.open(document.getElementById('terminal'));
+
+      let lastCols = 0, lastRows = 0;
+      function doFit() {
+        try { fit.fit(); } catch (e) { return; }
+        if (term.cols !== lastCols || term.rows !== lastRows) {
+          lastCols = term.cols; lastRows = term.rows;
+          send({ type: 'resize', cols: term.cols, rows: term.rows });
+        }
+      }
+
+      let resizeTimer = 0;
+      new ResizeObserver(() => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(doFit, 60);
+      }).observe(document.getElementById('terminal'));
+
+      term.onData(data => send({ type: 'input', data }));
+      term.onBinary(data => send({ type: 'input', data }));
+
+      // PuTTY-style clipboard: copy on select, paste with right click; Ctrl+Shift+C / Ctrl+Shift+V.
+      term.onSelectionChange(() => {
+        const text = term.getSelection();
+        if (text) send({ type: 'copy', data: text });
+      });
+      document.addEventListener('contextmenu', e => { e.preventDefault(); send({ type: 'pasteRequest' }); });
+      term.attachCustomKeyEventHandler(e => {
+        if (e.type !== 'keydown') return true;
+        if (e.ctrlKey && e.shiftKey && (e.code === 'KeyC')) {
+          const text = term.getSelection();
+          if (text) send({ type: 'copy', data: text });
+          return false;
+        }
+        if (e.ctrlKey && e.shiftKey && (e.code === 'KeyV')) {
+          send({ type: 'pasteRequest' });
+          return false;
+        }
+        return true;
+      });
+
+      if (host) {
+        host.addEventListener('message', ev => {
+          const msg = ev.data;
+          switch (msg.type) {
+            case 'output': term.write(msg.data); break;
+            case 'paste': term.paste(msg.data); break;
+            case 'focus': term.focus(); break;
+            case 'fontSize': term.options.fontSize = msg.value; doFit(); break;
+            case 'clear': term.clear(); break;
+            case 'status': term.write('\r\n\x1b[90m' + msg.data + '\x1b[0m\r\n'); break;
+          }
+        });
+      }
+
+      // Wait for web fonts to settle so the first fit measures the right cell size.
+      (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {
+        doFit();
+        send({ type: 'ready', cols: term.cols, rows: term.rows });
+        term.focus();
+      });
+    })();
+  </script>
+</body>
+</html>

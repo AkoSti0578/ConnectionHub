@@ -1,0 +1,487 @@
+<Window x:Class="ConnectionHub.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:ConnectionHub.ViewModels"
+        x:Name="Root"
+        Title="Connection Hub"
+        Width="1440" Height="880" MinWidth="900" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource WindowBrush}"
+        Foreground="{StaticResource TextBrush}"
+        FontFamily="{StaticResource UiFont}" FontSize="13"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        Icon="Assets/app.ico">
+
+    <Window.InputBindings>
+        <KeyBinding Key="N" Modifiers="Control" Command="{Binding NewConnectionCommand}" />
+        <KeyBinding Key="N" Modifiers="Control+Shift" Command="{Binding NewGroupCommand}" />
+        <KeyBinding Key="W" Modifiers="Control" Command="{Binding CloseSessionCommand}" />
+        <KeyBinding Key="Tab" Modifiers="Control" Command="{Binding NextSessionCommand}" />
+        <KeyBinding Key="Tab" Modifiers="Control+Shift" Command="{Binding PreviousSessionCommand}" />
+        <KeyBinding Key="Home" Modifiers="Control" Command="{Binding ShowHomeCommand}" />
+    </Window.InputBindings>
+
+    <Window.Resources>
+        <!-- Context menu for connections -->
+        <ContextMenu x:Key="ConnectionMenu" x:Shared="False" DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+            <MenuItem Header="Verbinden" Command="{Binding ConnectCommand}" FontWeight="SemiBold"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE768;" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Openen in Extern bureaublad (mstsc)" Command="{Binding ConnectExternalCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      Visibility="{Binding PlacementTarget.DataContext.Protocol, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource RdpOnlyVisibility}}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE8A7;" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Openen op alle beeldschermen (mstsc)" Command="{Binding ConnectExternalMultiMonitorCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      Visibility="{Binding PlacementTarget.DataContext.Protocol, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource RdpOnlyVisibility}}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE7F4;" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Bewerken" InputGestureText="F2" Command="{Binding EditCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE70F;" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Dupliceren" Command="{Binding DuplicateCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE8C8;" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Verwijderen" InputGestureText="Del" Command="{Binding DeleteCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE74D;" Foreground="{StaticResource DangerBrush}" /></MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+
+        <!-- Context menu for groups -->
+        <ContextMenu x:Key="GroupMenu" x:Shared="False" DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+            <MenuItem Header="Nieuwe verbinding in groep" Command="{Binding NewConnectionCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE710;" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Nieuwe subgroep" Command="{Binding NewGroupCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE8F4;" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Alle verbindingen openen" Command="{Binding ConnectGroupCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE768;" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Bewerken" InputGestureText="F2" Command="{Binding EditCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE70F;" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Verwijderen" InputGestureText="Del" Command="{Binding DeleteCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE74D;" Foreground="{StaticResource DangerBrush}" /></MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+
+        <ContextMenu x:Key="TreeBackgroundMenu">
+            <MenuItem Header="Nieuwe verbinding" InputGestureText="Ctrl+N" Command="{Binding NewConnectionCommand}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE710;" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Nieuwe groep" InputGestureText="Ctrl+Shift+N" Command="{Binding NewGroupCommand}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE8F4;" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Alles uitklappen" Command="{Binding ExpandAllCommand}" />
+            <MenuItem Header="Alles inklappen" Command="{Binding CollapseAllCommand}" />
+            <Separator />
+            <MenuItem Header="Importeren…" Command="{Binding ImportCommand}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE8B5;" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Exporteren…" Command="{Binding ExportCommand}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xEDE1;" /></MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+
+        <HierarchicalDataTemplate DataType="{x:Type vm:GroupItemViewModel}" ItemsSource="{Binding Children}">
+            <Grid Background="Transparent" ContextMenu="{StaticResource GroupMenu}"
+                  Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=TreeView}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource Icon}" Text="&#xE8B7;" FontSize="15" Margin="0,0,9,0"
+                           Foreground="{Binding Color, Converter={StaticResource StringToBrush}}" />
+                <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <Border Grid.Column="2" Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="7,1" Margin="6,0,4,0"
+                        VerticalAlignment="Center">
+                    <TextBlock Text="{Binding ConnectionCount}" FontSize="11" Foreground="{StaticResource SubTextBrush}" />
+                </Border>
+            </Grid>
+        </HierarchicalDataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:ConnectionItemViewModel}">
+            <Grid Background="Transparent" ContextMenu="{StaticResource ConnectionMenu}" ToolTip="{Binding NotesToolTip}"
+                  Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=TreeView}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Border Width="28" Height="28" CornerRadius="7" Margin="0,0,10,0" Background="{StaticResource SurfaceBrush}">
+                    <TextBlock Style="{StaticResource Icon}" Text="{Binding Protocol, Converter={StaticResource ProtocolToGlyph}}"
+                               Foreground="{Binding Protocol, Converter={StaticResource ProtocolToBrush}}" FontSize="13" />
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Subtitle}" FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <Ellipse Grid.Column="2" Width="7" Height="7" Fill="{StaticResource SuccessBrush}" Margin="6,0,6,0"
+                         Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibility}}" ToolTip="Sessie geopend" />
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="SidebarColumn" Width="310" MinWidth="220" MaxWidth="560" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ================= Sidebar ================= -->
+        <Border Background="{StaticResource SidebarBrush}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Brand -->
+                <Button Style="{StaticResource GhostButton}" Command="{Binding ShowHomeCommand}" HorizontalContentAlignment="Left"
+                        Margin="10,14,10,6" Padding="8,6" ToolTip="Startscherm (Ctrl+Home)">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="Assets/app.png" Width="30" Height="30" RenderOptions.BitmapScalingMode="HighQuality" />
+                        <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Connection Hub" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" />
+                            <TextBlock Text="RDP &amp; SSH sessiebeheer" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Button>
+
+                <!-- Search -->
+                <Grid Grid.Row="1" Margin="16,6,16,8">
+                    <TextBox x:Name="SearchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Tag="Zoeken (Ctrl+F)"
+                             Padding="32,7,28,7" />
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" HorizontalAlignment="Left" Margin="12,0,0,0"
+                               Foreground="{StaticResource MutedTextBrush}" FontSize="12" IsHitTestVisible="False" />
+                    <Button Style="{StaticResource TabCloseButton}" Content="&#xE711;" HorizontalAlignment="Right" Margin="0,0,4,0"
+                            Click="OnClearSearch" Visibility="{Binding SearchText, Converter={StaticResource NullToCollapsed}}" />
+                </Grid>
+
+                <!-- Actions -->
+                <Grid Grid.Row="2" Margin="16,0,12,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button Style="{StaticResource AccentButton}" Command="{Binding NewConnectionCommand}" Padding="12,7"
+                            ToolTip="Nieuwe verbinding (Ctrl+N)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,8,0" />
+                            <TextBlock Text="Nieuwe verbinding" />
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Column="1" Style="{StaticResource IconButton}" Content="&#xE8F4;" Margin="6,0,0,0"
+                            Command="{Binding NewGroupCommand}" ToolTip="Nieuwe groep (Ctrl+Shift+N)" />
+                    <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="&#xE712;" Click="OnMoreClick" ToolTip="Meer" />
+                </Grid>
+
+                <!-- Tree -->
+                <TreeView x:Name="Tree" Grid.Row="3" Margin="8,4,6,4" ItemsSource="{Binding RootItems}" AllowDrop="True"
+                          ContextMenu="{StaticResource TreeBackgroundMenu}"
+                          SelectedItemChanged="OnTreeSelectionChanged"
+                          MouseDoubleClick="OnTreeDoubleClick"
+                          PreviewMouseLeftButtonDown="OnTreePreviewMouseDown"
+                          PreviewMouseMove="OnTreePreviewMouseMove"
+                          PreviewMouseRightButtonDown="OnTreePreviewRightMouseDown"
+                          DragOver="OnTreeDragOver" Drop="OnTreeDrop" KeyDown="OnTreeKeyDown" />
+
+                <!-- Empty state -->
+                <StackPanel Grid.Row="3" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
+                            Visibility="{Binding ConnectionCount, Converter={StaticResource NullToCollapsed}, ConverterParameter=inverse}"
+                            x:Name="EmptyTreeHint" IsHitTestVisible="False">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE968;" FontSize="34" Foreground="{StaticResource MutedTextBrush}" />
+                    <TextBlock Text="Nog geen verbindingen" HorizontalAlignment="Center" Margin="0,12,0,4" FontWeight="SemiBold" />
+                    <TextBlock Text="Maak een verbinding of groep aan om te beginnen." Style="{StaticResource Caption}"
+                               TextWrapping="Wrap" TextAlignment="Center" />
+                </StackPanel>
+
+                <!-- Footer -->
+                <Border Grid.Row="4" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="18,10">
+                    <TextBlock Style="{StaticResource Caption}" FontSize="11">
+                        <Run Text="{Binding ConnectionCount, Mode=OneWay}" /><Run Text=" verbindingen · " /><Run Text="{Binding GroupCount, Mode=OneWay}" /><Run Text=" groepen" />
+                    </TextBlock>
+                </Border>
+            </Grid>
+        </Border>
+
+        <GridSplitter Grid.Column="1" Width="1" Background="{StaticResource BorderBrush}" HorizontalAlignment="Stretch"
+                      ResizeBehavior="PreviousAndNext" Focusable="False" />
+
+        <!-- ================= Main area ================= -->
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Tab strip -->
+            <Border Background="{StaticResource WindowBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
+                    Visibility="{Binding HasSessions, Converter={StaticResource BoolToVisibility}}">
+                <Grid Height="46">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Button Style="{StaticResource IconButton}" Content="&#xE80F;" Margin="8,0,2,0" Command="{Binding ShowHomeCommand}"
+                            ToolTip="Startscherm (Ctrl+Home)" />
+
+                    <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                  PreviewMouseWheel="OnTabsMouseWheel">
+                        <ItemsControl ItemsSource="{Binding Sessions}" Margin="4,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:SessionViewModel}">
+                                    <Border x:Name="Tab" Margin="2,7,2,7" CornerRadius="7" Padding="12,0,6,0" Background="Transparent"
+                                            Cursor="Hand" MinWidth="140" MaxWidth="260" ToolTip="{Binding StatusText}">
+                                        <Border.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick"
+                                                          Command="{Binding DataContext.ActivateSessionCommand, ElementName=Root}"
+                                                          CommandParameter="{Binding}" />
+                                            <MouseBinding MouseAction="MiddleClick"
+                                                          Command="{Binding DataContext.CloseSessionCommand, ElementName=Root}"
+                                                          CommandParameter="{Binding}" />
+                                        </Border.InputBindings>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Width="16" Margin="0,0,9,0" VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource Icon}" FontSize="13"
+                                                           Text="{Binding Protocol, Converter={StaticResource ProtocolToGlyph}}"
+                                                           Foreground="{Binding Protocol, Converter={StaticResource ProtocolToBrush}}" />
+                                                <Ellipse Width="7" Height="7" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-3,-3"
+                                                         Fill="{Binding State, Converter={StaticResource StateToBrush}}"
+                                                         Stroke="{StaticResource WindowBrush}" StrokeThickness="1.5" />
+                                            </Grid>
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" x:Name="TabTitle" Foreground="{StaticResource SubTextBrush}" />
+                                            <Button Grid.Column="2" Style="{StaticResource TabCloseButton}" Content="&#xE711;" Margin="8,0,0,0"
+                                                    Command="{Binding DataContext.CloseSessionCommand, ElementName=Root}" CommandParameter="{Binding}"
+                                                    ToolTip="Sluiten (Ctrl+W)" />
+                                        </Grid>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <Trigger SourceName="Tab" Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Tab" Property="Background" Value="{StaticResource SurfaceBrush}" />
+                                        </Trigger>
+                                        <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                            <Setter TargetName="Tab" Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+                                            <Setter TargetName="TabTitle" Property="Foreground" Value="{StaticResource TextBrush}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- Active session actions -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,10,0" DataContext="{Binding ActiveSession}"
+                                Visibility="{Binding Converter={StaticResource NullToCollapsed}}">
+                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,10,0"
+                                   MaxWidth="260" TextTrimming="CharacterEllipsis" />
+                        <Button Style="{StaticResource IconButton}" Content="&#xE72C;" Command="{Binding ReconnectCommand}" ToolTip="Opnieuw verbinden" />
+                        <Button Style="{StaticResource IconButton}" Content="&#xE8CD;" Command="{Binding DisconnectCommand}" ToolTip="Verbinding verbreken" />
+                        <Button Style="{StaticResource IconButton}" Content="&#xE740;" Command="{Binding FullScreenCommand}" ToolTip="Volledig scherm (RDP, Ctrl+Alt+Break om terug te keren)" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Sessions: every session view stays alive (hidden when inactive) so connections survive tab switches. -->
+            <ItemsControl Grid.Row="1" ItemsSource="{Binding Sessions}" Focusable="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Grid />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:SessionViewModel}">
+                        <Grid Visibility="{Binding IsActive, Converter={StaticResource BoolToHidden}}" Background="{StaticResource SessionBackgroundBrush}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Border Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
+                                    Padding="18,10" Visibility="{Binding State, Converter={StaticResource StateToBannerVisibility}}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE7BA;" FontSize="16" Margin="0,0,12,0"
+                                               Foreground="{Binding State, Converter={StaticResource StateToBrush}}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding StatusText}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="12,0,0,0">
+                                        <Button Style="{StaticResource AccentButton}" Command="{Binding ReconnectCommand}" Padding="12,5">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE72C;" FontSize="12" Margin="0,0,8,0" />
+                                                <TextBlock Text="Opnieuw verbinden" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Content="Sluiten" Margin="8,0,0,0" Padding="12,5"
+                                                Command="{Binding DataContext.CloseSessionCommand, ElementName=Root}" CommandParameter="{Binding}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <ContentPresenter Grid.Row="1" Content="{Binding Element}" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Dashboard -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                          Visibility="{Binding ShowDashboard, Converter={StaticResource BoolToVisibility}}"
+                          Background="{StaticResource WindowBrush}">
+                <Grid MaxWidth="980" Margin="48,56,48,40">
+                    <StackPanel>
+                        <Border Width="64" Height="64" CornerRadius="16" Background="{StaticResource BrandGradient}" HorizontalAlignment="Left">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE968;" FontSize="30" Foreground="White" />
+                        </Border>
+                        <TextBlock Text="Welkom bij Connection Hub" FontSize="30" FontWeight="SemiBold" Margin="0,22,0,6" />
+                        <TextBlock Text="Beheer en open al je RDP- en SSH-sessies vanuit één plek." FontSize="15" Foreground="{StaticResource SubTextBrush}" />
+
+                        <!-- Quick connect -->
+                        <Border Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                CornerRadius="12" Padding="20" Margin="0,32,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Snel verbinden" FontSize="15" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Caption}" Margin="0,3,0,12"
+                                           Text="Bijvoorbeeld: rdp server01 · ssh beheer@10.0.0.5:2222 · gebruiker@host (SSH)" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="QuickConnectBox" Text="{Binding QuickConnectText, UpdateSourceTrigger=PropertyChanged}"
+                                             Tag="host, gebruiker@host of rdp://host:poort" FontSize="14" Padding="12,9">
+                                        <TextBox.InputBindings>
+                                            <KeyBinding Key="Enter" Command="{Binding QuickConnectCommand}" />
+                                        </TextBox.InputBindings>
+                                    </TextBox>
+                                    <Button Grid.Column="1" Style="{StaticResource AccentButton}" Margin="10,0,0,0" Padding="18,9"
+                                            Command="{Binding QuickConnectCommand}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE768;" FontSize="12" Margin="0,0,8,0" />
+                                            <TextBlock Text="Verbinden" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Recent -->
+                        <Grid Margin="0,32,0,12">
+                            <TextBlock Text="Recente verbindingen" FontSize="15" FontWeight="SemiBold" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding RecentConnections}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:ConnectionItemViewModel}">
+                                    <Button Width="226" Height="86" Margin="0,0,12,12" Padding="16,12" HorizontalContentAlignment="Stretch"
+                                            VerticalContentAlignment="Stretch" Background="{StaticResource SidebarBrush}"
+                                            Command="{Binding DataContext.ConnectCommand, ElementName=Root}" CommandParameter="{Binding}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Width="38" Height="38" CornerRadius="9" Background="{StaticResource SurfaceBrush}" VerticalAlignment="Top">
+                                                <TextBlock Style="{StaticResource Icon}" FontSize="16"
+                                                           Text="{Binding Protocol, Converter={StaticResource ProtocolToGlyph}}"
+                                                           Foreground="{Binding Protocol, Converter={StaticResource ProtocolToBrush}}" />
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Subtitle}" FontSize="11" Foreground="{StaticResource MutedTextBrush}"
+                                                           TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                                                <Border HorizontalAlignment="Left" CornerRadius="4" Padding="6,1" Margin="0,8,0,0"
+                                                        Background="{StaticResource SurfaceBrush}">
+                                                    <TextBlock Text="{Binding ProtocolLabel}" FontSize="10" FontWeight="SemiBold"
+                                                               Foreground="{Binding Protocol, Converter={StaticResource ProtocolToBrush}}" />
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Style="{StaticResource Caption}" Text="Nog geen verbindingen. Maak er een aan via 'Nieuwe verbinding' in de zijbalk."
+                                   Visibility="{Binding ConnectionCount, Converter={StaticResource NullToCollapsed}, ConverterParameter=inverse}" />
+
+                        <!-- Tips -->
+                        <Grid Margin="0,28,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Background="{StaticResource SidebarBrush}" CornerRadius="12" Padding="18" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE740;" FontSize="18" HorizontalAlignment="Left" Foreground="{StaticResource RdpBrush}" />
+                                    <TextBlock Text="Schaalbare RDP" FontWeight="SemiBold" Margin="0,10,0,4" />
+                                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap"
+                                               Text="Dynamische resolutie past het externe bureaublad aan aan je venster en DPI. Smart sizing schaalt een vaste resolutie." />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="2" Background="{StaticResource SidebarBrush}" CornerRadius="12" Padding="18" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" FontSize="18" HorizontalAlignment="Left" Foreground="{StaticResource SshBrush}" />
+                                    <TextBlock Text="SSH met 2FA" FontWeight="SemiBold" Margin="0,10,0,4" />
+                                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap"
+                                               Text="Keyboard-interactive authenticatie met OTP, Duo of RADIUS-codes. Wachtwoorden en hostsleutels worden veilig opgeslagen." />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="4" Background="{StaticResource SidebarBrush}" CornerRadius="12" Padding="18" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE8B7;" FontSize="18" HorizontalAlignment="Left" Foreground="{StaticResource AccentHoverBrush}" />
+                                    <TextBlock Text="Groepen" FontWeight="SemiBold" Margin="0,10,0,4" />
+                                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap"
+                                               Text="Orden verbindingen in (sub)groepen met kleuren. Sleep items om te verplaatsen, open een hele groep in één keer." />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>

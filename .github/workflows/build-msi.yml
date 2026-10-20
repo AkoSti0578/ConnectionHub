@@ -1,0 +1,49 @@
+name: Build MSI
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -like 'refs/tags/v*') { $v = $env:GITHUB_REF_NAME.Substring(1) }
+          else { $v = "1.0.$($env:GITHUB_RUN_NUMBER)" }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Version: $v"
+
+      - name: Publish application (self-contained, win-x64)
+        run: dotnet publish src/ConnectionHub/ConnectionHub.csproj -c Release -r win-x64 --self-contained true -p:Version=${{ steps.version.outputs.version }} -o artifacts/publish
+
+      - name: Build MSI
+        run: dotnet build installer/ConnectionHub.Installer.wixproj -c Release -p:ProductVersion=${{ steps.version.outputs.version }} -p:AppPublishDir=${{ github.workspace }}\artifacts\publish\ -o artifacts/msi
+
+      - name: Upload MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: ConnectionHub-${{ steps.version.outputs.version }}-msi
+          path: artifacts/msi/**/*.msi
+          if-no-files-found: error
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/msi/**/*.msi

@@ -1,0 +1,16 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+
+  <PropertyGroup>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">1.0.0</ProductVersion>
+    <!-- Output of: dotnet publish src/ConnectionHub -c Release -r win-x64 -self-contained -o artifacts/publish -->
+    <AppPublishDir Condition="'$(AppPublishDir)' == ''">$(MSBuildThisFileDirectory)..\artifacts\publish\</AppPublishDir>
+    <DefineConstants>ProductVersion=$(ProductVersion);AppPublishDir=$(AppPublishDir)</DefineConstants>
+    <OutputName>ConnectionHub-$(ProductVersion)-x64</OutputName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,54 @@
+<Window x:Class="ConnectionHub.Views.GroupEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Style="{StaticResource DialogWindow}"
+        Width="440" Title="Groep">
+    <StackPanel Margin="24,20,24,20">
+        <TextBlock x:Name="HeaderText" Text="Nieuwe groep" FontSize="20" FontWeight="SemiBold" />
+        <TextBlock Text="Groepeer verbindingen per klant, omgeving of locatie." Style="{StaticResource Caption}" Margin="0,2,0,6" />
+
+        <TextBlock Text="Naam" Style="{StaticResource FieldLabel}" />
+        <TextBox x:Name="NameBox" Tag="bijv. Productie" />
+
+        <TextBlock Text="Bovenliggende groep" Style="{StaticResource FieldLabel}" />
+        <ComboBox x:Name="ParentCombo" DisplayMemberPath="Label" />
+
+        <TextBlock Text="Kleur" Style="{StaticResource FieldLabel}" />
+        <ItemsControl x:Name="ColorList">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <RadioButton GroupName="Color" Tag="{Binding}" Checked="OnColorChecked" Margin="0,0,8,0" Cursor="Hand"
+                                 FocusVisualStyle="{x:Null}">
+                        <RadioButton.Template>
+                            <ControlTemplate TargetType="RadioButton">
+                                <Border x:Name="Ring" Width="30" Height="30" CornerRadius="15" BorderThickness="2" BorderBrush="Transparent">
+                                    <Ellipse Width="20" Height="20" Fill="{Binding Converter={StaticResource StringToBrush}}" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter TargetName="Ring" Property="BorderBrush" Value="White" />
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Ring" Property="Opacity" Value="0.85" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </RadioButton.Template>
+                    </RadioButton>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <TextBlock x:Name="ErrorText" Foreground="{StaticResource DangerBrush}" Margin="0,10,0,0" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Annuleren" MinWidth="96" Margin="0,0,8,0" IsCancel="True" />
+            <Button Content="Opslaan" MinWidth="96" Style="{StaticResource AccentButton}" IsDefault="True" Click="OnSave" />
+        </StackPanel>
+    </StackPanel>
+</Window>

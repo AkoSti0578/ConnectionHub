@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- Allows building on non-Windows machines (CI / Linux); the app itself only runs on Windows. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>ConnectionHub</RootNamespace>
+    <AssemblyName>ConnectionHub</AssemblyName>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Product>Connection Hub</Product>
+    <Company>Connection Hub</Company>
+    <Description>RDP and SSH connection manager</Description>
+    <Version>1.0.0</Version>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <SatelliteResourceLanguages>en;nl</SatelliteResourceLanguages>
+    <!-- WinForms/WPF interop with the RDP ActiveX control relies on COM; trimming is not supported. -->
+    <PublishTrimmed>false</PublishTrimmed>
+    <!-- DPI awareness is declared in app.manifest for the WPF host; WinForms is only used to host the RDP ActiveX control. -->
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SSH.NET" Version="2026.0.0" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" />
+    <Resource Include="Assets\app.png" />
+    <Content Include="Assets\terminal\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

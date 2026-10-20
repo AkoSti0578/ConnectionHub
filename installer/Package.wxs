@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="Connection Hub"
+           Manufacturer="Connection Hub"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="7C4E2B6A-1F3D-4E8A-9B5C-2D6F8A1E3C47"
+           Scope="perMachine"
+           Compressed="yes">
+
+    <SummaryInformation Description="Connection Hub – RDP en SSH sessiebeheer" />
+
+    <!-- Installing a newer version removes the older one; settings in %APPDATA% are kept. -->
+    <MajorUpgrade DowngradeErrorMessage="Er is al een nieuwere versie van [ProductName] geïnstalleerd." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="AppIcon.ico" SourceFile="..\src\ConnectionHub\Assets\app.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/akosti0578/connectionhub" />
+    <Property Id="ARPCOMMENTS" Value="RDP en SSH sessiebeheer" />
+
+    <!-- Windows 8.1 / Server 2012 R2 or newer (RDP control MsRdpClient9). -->
+    <Launch Condition="Installed OR VersionNT64 &gt;= 603" Message="[ProductName] vereist 64-bit Windows 8.1 of nieuwer." />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Connection Hub" />
+    </StandardDirectory>
+
+    <Feature Id="Main" Title="Connection Hub" Description="De applicatie." Level="1" AllowAbsent="no" ConfigurableDirectory="INSTALLFOLDER">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+    <Feature Id="DesktopShortcutFeature" Title="Snelkoppeling op bureaublad" Level="1">
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+    <!-- Installer UI with directory selection and the option to start the app when finished. -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Connection Hub starten" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+
+    <CustomAction Id="LaunchApplication" Directory="INSTALLFOLDER" ExeCommand="&quot;[INSTALLFOLDER]ConnectionHub.exe&quot;"
+                  Return="asyncNoWait" Impersonate="yes" />
+    <UI>
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication"
+               Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed" />
+    </UI>
+  </Package>
+
+  <Fragment>
+    <!-- Everything produced by 'dotnet publish' (self-contained .NET runtime, WebView2 loader, terminal assets). -->
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(var.AppPublishDir)**">
+        <Exclude Files="$(var.AppPublishDir)**\*.pdb" />
+      </Files>
+    </ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut">
+        <Shortcut Id="StartMenuShortcutLink" Name="Connection Hub" Description="RDP en SSH sessiebeheer"
+                  Target="[INSTALLFOLDER]ConnectionHub.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon.ico" />
+        <RegistryValue Root="HKLM" Key="Software\Connection Hub" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder">
+      <Component Id="DesktopShortcut">
+        <Shortcut Id="DesktopShortcutLink" Name="Connection Hub" Description="RDP en SSH sessiebeheer"
+                  Target="[INSTALLFOLDER]ConnectionHub.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon.ico" />
+        <RegistryValue Root="HKLM" Key="Software\Connection Hub" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+  </Fragment>
+</Wix>
