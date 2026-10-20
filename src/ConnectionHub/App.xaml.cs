@@ -41,7 +41,11 @@ public partial class App : Application
         {
             var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ConnectionHub");
             Directory.CreateDirectory(logDir);
-            File.AppendAllText(Path.Combine(logDir, "error.log"), $"[{DateTime.Now:O}] {e.Exception}\n\n");
+            var app = typeof(App).Assembly.GetName().Version;
+            var runtime = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+            var json = typeof(System.Text.Json.JsonSerializer).Assembly.GetName().Version;
+            File.AppendAllText(Path.Combine(logDir, "error.log"),
+                $"[{DateTime.Now:O}] Connection Hub {app} | {runtime} | System.Text.Json {json} | {AppContext.BaseDirectory}\n{e.Exception}\n\n");
         }
         catch (Exception)
         {
