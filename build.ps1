@@ -21,6 +21,8 @@ Write-Host "==> Publishing application ($Version)" -ForegroundColor Cyan
 dotnet publish "$root\src\ConnectionHub\ConnectionHub.csproj" -c $Configuration -r win-x64 --self-contained true -p:Version=$Version -o $publish
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed" }
 
+& "$root\build\Verify-Publish.ps1" -PublishDir $publish
+
 Write-Host "==> Building MSI" -ForegroundColor Cyan
 dotnet build "$root\installer\ConnectionHub.Installer.wixproj" -c $Configuration -p:ProductVersion=$Version -p:AppPublishDir="$publish\" -o $msiOut
 if ($LASTEXITCODE -ne 0) { throw "MSI build failed" }

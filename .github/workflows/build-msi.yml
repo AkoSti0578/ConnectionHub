@@ -18,7 +18,10 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          global-json-file: global.json
+
+      - name: Show SDK
+        run: dotnet --version
 
       - name: Determine version
         id: version
@@ -31,6 +34,10 @@ jobs:
 
       - name: Publish application (self-contained, win-x64)
         run: dotnet publish src/ConnectionHub/ConnectionHub.csproj -c Release -r win-x64 --self-contained true -p:Version=${{ steps.version.outputs.version }} -o artifacts/publish
+
+      - name: Verify assembly references
+        shell: pwsh
+        run: ./build/Verify-Publish.ps1 -PublishDir artifacts/publish
 
       - name: Build MSI
         run: dotnet build installer/ConnectionHub.Installer.wixproj -c Release -p:ProductVersion=${{ steps.version.outputs.version }} -p:AppPublishDir=${{ github.workspace }}\artifacts\publish\ -o artifacts/msi
