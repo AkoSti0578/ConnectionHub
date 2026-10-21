@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private readonly MainViewModel _vm;
     private Point _dragStart;
     private TreeItemViewModel? _dragItem;
+    private TreeItemViewModel? _clickItem;
 
     public MainWindow()
     {
@@ -127,6 +128,16 @@ public partial class MainWindow : Window
         _dragItem = ItemFromElement(e.OriginalSource as DependencyObject);
         if (FindAncestor<System.Windows.Controls.Primitives.ToggleButton>(e.OriginalSource as DependencyObject) != null)
             _dragItem = null;
+        _clickItem = _dragItem;
+    }
+
+    private void OnTreePreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        // A single click on a connection that already has an open session switches to that session.
+        var item = ItemFromElement(e.OriginalSource as DependencyObject);
+        if (item != null && ReferenceEquals(item, _clickItem))
+            _vm.ActivateExistingSession(item);
+        _clickItem = null;
     }
 
     private void OnTreePreviewMouseMove(object sender, MouseEventArgs e)
@@ -140,6 +151,7 @@ public partial class MainWindow : Window
 
         var item = _dragItem;
         _dragItem = null;
+        _clickItem = null;
         DragDrop.DoDragDrop(Tree, new DataObject(DragFormat, item), DragDropEffects.Move);
     }
 

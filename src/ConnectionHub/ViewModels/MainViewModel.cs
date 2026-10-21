@@ -31,6 +31,10 @@ public sealed class MainViewModel : ObservableObject
         NewConnectionCommand = new RelayCommand(p => NewConnection(TargetGroup(p)));
         NewGroupCommand = new RelayCommand(p => NewGroup(TargetGroup(p)));
         ConnectCommand = new RelayCommand(p => Connect(ItemFrom(p)));
+        OpenNewSessionCommand = new RelayCommand(p =>
+        {
+            if (ItemFrom(p) is ConnectionItemViewModel c) OpenSession(c.Model);
+        });
         ConnectExternalCommand = new RelayCommand(p => ConnectExternal(ItemFrom(p), false));
         ConnectExternalMultiMonitorCommand = new RelayCommand(p => ConnectExternal(ItemFrom(p), true));
         EditCommand = new RelayCommand(p => Edit(ItemFrom(p)));
@@ -63,6 +67,7 @@ public sealed class MainViewModel : ObservableObject
     public ICommand NewConnectionCommand { get; }
     public ICommand NewGroupCommand { get; }
     public ICommand ConnectCommand { get; }
+    public ICommand OpenNewSessionCommand { get; }
     public ICommand ConnectExternalCommand { get; }
     public ICommand ConnectExternalMultiMonitorCommand { get; }
     public ICommand EditCommand { get; }
@@ -424,7 +429,7 @@ public sealed class MainViewModel : ObservableObject
         switch (item)
         {
             case ConnectionItemViewModel c:
-                OpenSession(c.Model);
+                if (!ActivateExistingSession(c)) OpenSession(c.Model);
                 break;
             case GroupItemViewModel g:
                 item.IsExpanded = !item.IsExpanded;
@@ -439,8 +444,20 @@ public sealed class MainViewModel : ObservableObject
         if (connections.Count > 8 && !MessageWindow.Show(Owner, "Alle verbindingen openen",
                 $"Er worden {connections.Count} sessies geopend. Doorgaan?", MessageKind.Question, "Openen", "Annuleren"))
             return;
-        foreach (var c in connections) OpenSession(c.Model, activate: false);
-        if (Sessions.LastOrDefault() is { } last) ActiveSession = last;
+        foreach (var c in connections.Where(c => FindSession(c.Model.Id) == null))
+            OpenSession(c.Model, activate: false);
+        if (connections.Select(c => FindSession(c.Model.Id)).LastOrDefault(s => s != null) is { } last) ActiveSession = last;
+    }
+
+    /// <summary>The open session for a saved connection, if any (the most recently opened one).</summary>
+    public SessionViewModel? FindSession(Guid connectionId) => Sessions.LastOrDefault(s => s.Entry.Id == connectionId);
+
+    /// <summary>Switches to the open session of a connection instead of opening a new one. Returns false when none is open.</summary>
+    public bool ActivateExistingSession(TreeItemViewModel? item)
+    {
+        if (item is not ConnectionItemViewModel c || FindSession(c.Model.Id) is not { } session) return false;
+        ActiveSession = session;
+        return true;
     }
 
     private void ConnectExternal(TreeItemViewModel? item, bool multiMonitor)
@@ -540,6 +557,13 @@ public sealed class MainViewModel : ObservableObject
         var existing = _store.Data.Connections.FirstOrDefault(c => c.Protocol == protocol && c.Port == port
             && string.Equals(c.Host, host, StringComparison.OrdinalIgnoreCase)
             && (user.Length == 0 || string.Equals(c.Username, user, StringComparison.OrdinalIgnoreCase)));
+
+        if (existing != null && FindSession(existing.Id) is { } open)
+        {
+            ActiveSession = open;
+            QuickConnectText = string.Empty;
+            return;
+        }
 
         OpenSession(existing ?? new ConnectionEntry
         {

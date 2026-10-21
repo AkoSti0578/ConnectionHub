@@ -29,6 +29,10 @@
                       CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
                 <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE768;" /></MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="Extra sessie openen" Command="{Binding OpenNewSessionCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE710;" /></MenuItem.Icon>
+            </MenuItem>
             <MenuItem Header="Openen in Extern bureaublad (mstsc)" Command="{Binding ConnectExternalCommand}"
                       CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                       Visibility="{Binding PlacementTarget.DataContext.Protocol, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource RdpOnlyVisibility}}">
@@ -205,6 +209,7 @@
                           SelectedItemChanged="OnTreeSelectionChanged"
                           MouseDoubleClick="OnTreeDoubleClick"
                           PreviewMouseLeftButtonDown="OnTreePreviewMouseDown"
+                          PreviewMouseLeftButtonUp="OnTreePreviewMouseUp"
                           PreviewMouseMove="OnTreePreviewMouseMove"
                           PreviewMouseRightButtonDown="OnTreePreviewRightMouseDown"
                           DragOver="OnTreeDragOver" Drop="OnTreeDrop" KeyDown="OnTreeKeyDown" />
