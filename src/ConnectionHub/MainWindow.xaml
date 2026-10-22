@@ -267,7 +267,7 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:SessionViewModel}">
                                     <Border x:Name="Tab" Margin="2,7,2,7" CornerRadius="7" Padding="12,0,6,0" Background="Transparent"
-                                            Cursor="Hand" MinWidth="140" MaxWidth="260" ToolTip="{Binding StatusText}">
+                                            Cursor="Hand" MinWidth="120" MaxWidth="240" ToolTip="{Binding StatusText}">
                                         <Border.InputBindings>
                                             <MouseBinding MouseAction="LeftClick"
                                                           Command="{Binding DataContext.ActivateSessionCommand, ElementName=Root}"
@@ -314,8 +314,6 @@
                     <!-- Active session actions -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,10,0" DataContext="{Binding ActiveSession}"
                                 Visibility="{Binding Converter={StaticResource NullToCollapsed}}">
-                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,10,0"
-                                   MaxWidth="260" TextTrimming="CharacterEllipsis" />
                         <Button Style="{StaticResource IconButton}" Content="&#xE72C;" Command="{Binding ReconnectCommand}" ToolTip="Opnieuw verbinden" />
                         <Button Style="{StaticResource IconButton}" Content="&#xE8CD;" Command="{Binding DisconnectCommand}" ToolTip="Verbinding verbreken" />
                         <Button Style="{StaticResource IconButton}" Content="&#xE740;" Command="{Binding FullScreenCommand}" ToolTip="Volledig scherm (RDP, Ctrl+Alt+Break om terug te keren)" />
