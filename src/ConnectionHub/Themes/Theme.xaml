@@ -59,6 +59,7 @@
     <conv:ProtocolToBrushConverter x:Key="ProtocolToBrush" />
     <conv:ProtocolToGlyphConverter x:Key="ProtocolToGlyph" />
     <conv:RdpOnlyVisibilityConverter x:Key="RdpOnlyVisibility" />
+    <conv:RdpOnlyVisibilityConverter x:Key="SshOnlyVisibility" Invert="True" />
     <conv:StringToBrushConverter x:Key="StringToBrush" />
 
     <!-- ===== Base text ===== -->
@@ -680,6 +681,85 @@
                             <Setter TargetName="Underline" Property="Background" Value="{StaticResource AccentBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ===== ListView / GridView (file browser) ===== -->
+    <Style TargetType="ListView">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+    </Style>
+
+    <Style TargetType="ListViewItem">
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <Border x:Name="Bd" Background="Transparent" CornerRadius="5" Padding="0,5" Margin="4,0">
+                        <GridViewRowPresenter VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentSoftBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="GridViewColumnHeader">
+        <Setter Property="Foreground" Value="{StaticResource SubTextBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="GridViewColumnHeader">
+                    <Grid Background="Transparent">
+                        <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10,8,6,8">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
+                        </Border>
+                        <Thumb x:Name="PART_HeaderGripper" HorizontalAlignment="Right" Width="6" Cursor="SizeWE">
+                            <Thumb.Template>
+                                <ControlTemplate TargetType="Thumb">
+                                    <Border Background="Transparent" />
+                                </ControlTemplate>
+                            </Thumb.Template>
+                        </Thumb>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="ProgressBar">
+        <Setter Property="Height" Value="6" />
+        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+        <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ProgressBar">
+                    <Border CornerRadius="3" Background="{TemplateBinding Background}" ClipToBounds="True">
+                        <Grid>
+                            <Border x:Name="PART_Track" />
+                            <Border x:Name="PART_Indicator" HorizontalAlignment="Left" CornerRadius="3" Background="{TemplateBinding Foreground}" />
+                        </Grid>
+                    </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

@@ -77,10 +77,13 @@ public sealed class ProtocolToBrushConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>Visible for RDP connections; with <see cref="Invert"/> visible for SSH connections.</summary>
 public sealed class RdpOnlyVisibilityConverter : IValueConverter
 {
+    public bool Invert { get; set; }
+
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        => value is ConnectionProtocol.Rdp ? Visibility.Visible : Visibility.Collapsed;
+        => value is ConnectionProtocol protocol && (protocol == ConnectionProtocol.Rdp) != Invert ? Visibility.Visible : Visibility.Collapsed;
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         => throw new NotSupportedException();

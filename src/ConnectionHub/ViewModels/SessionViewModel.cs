@@ -48,6 +48,7 @@ public sealed class SessionViewModel : ObservableObject, IDisposable
     {
         Entry = entry;
         View = view;
+        IsSftp = view is Views.SftpView;
         View.StateChanged += (_, e) => Application.Current.Dispatcher.BeginInvoke(() =>
         {
             State = e.State;
@@ -63,7 +64,16 @@ public sealed class SessionViewModel : ObservableObject, IDisposable
     public ISessionView View { get; }
     public FrameworkElement Element => View.Element;
 
-    public string Title => string.IsNullOrWhiteSpace(Entry.Name) ? Entry.Host : Entry.Name;
+    /// <summary>True for an SFTP file browser tab (as opposed to a terminal or remote desktop).</summary>
+    public bool IsSftp { get; }
+
+    public string Title => (string.IsNullOrWhiteSpace(Entry.Name) ? Entry.Host : Entry.Name) + (IsSftp ? " · SFTP" : string.Empty);
+
+    // E8B7 = Folder, E756 = CommandPrompt, E7F4 = TVMonitor
+    public string Glyph => IsSftp ? "\uE8B7" : Entry.Protocol == ConnectionProtocol.Ssh ? "\uE756" : "\uE7F4";
+
+    /// <summary>An SFTP browser can be opened next to SSH terminal tabs.</summary>
+    public bool CanOpenSftp => Entry.Protocol == ConnectionProtocol.Ssh && !IsSftp;
     public string ProtocolLabel => Entry.Protocol == ConnectionProtocol.Rdp ? "RDP" : "SSH";
     public ConnectionProtocol Protocol => Entry.Protocol;
 

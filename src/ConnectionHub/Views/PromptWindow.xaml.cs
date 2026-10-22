@@ -13,7 +13,7 @@ public partial class PromptWindow : Window
 {
     private readonly List<Control> _inputs = new();
 
-    public PromptWindow(string target, string header, string instruction, IReadOnlyList<AuthPrompt> prompts)
+    public PromptWindow(string target, string header, string instruction, IReadOnlyList<AuthPrompt> prompts, string? initialValue = null)
     {
         InitializeComponent();
         WindowTheming.Attach(this);
@@ -32,12 +32,22 @@ public partial class PromptWindow : Window
                 TextWrapping = TextWrapping.Wrap
             });
 
-            Control input = prompt.Echo ? new TextBox() : new PasswordBox();
+            Control input = prompt.Echo ? new TextBox { Text = _inputs.Count == 0 ? initialValue ?? string.Empty : string.Empty } : new PasswordBox();
             _inputs.Add(input);
             Fields.Children.Add(input);
         }
 
-        Loaded += (_, _) => _inputs.FirstOrDefault()?.Focus();
+        Loaded += (_, _) =>
+        {
+            var first = _inputs.FirstOrDefault();
+            first?.Focus();
+            if (first is TextBox box && box.Text.Length > 0)
+            {
+                // Select the name without its extension, like Windows Explorer does when renaming.
+                var dot = box.Text.LastIndexOf('.');
+                box.Select(0, dot > 0 ? dot : box.Text.Length);
+            }
+        };
     }
 
     public string[] Answers { get; private set; } = Array.Empty<string>();

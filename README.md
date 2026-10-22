@@ -22,6 +22,15 @@ Een moderne Windows-applicatie om **RDP**- en **SSH**-sessies te beheren en te o
 - Controle van hostsleutels (SHA256-vingerafdruk) met waarschuwing bij een gewijzigde sleutel.
 - Kopiëren bij selecteren, plakken met rechtermuisknop, `Ctrl+Shift+C` / `Ctrl+Shift+V`.
 
+### SFTP
+- Bestandsbrowser per SSH-server in een eigen tabblad: via het rechtermuismenu (**Bestanden (SFTP)**) of de mapknop bij een open SSH-sessie.
+- Aanmelden zoals bij de terminal, inclusief keyboard-interactive / 2FA en controle van de hostsleutel.
+- Bladeren (pad typen, map omhoog, thuismap), verborgen bestanden tonen, rechten en wijzigingsdatum.
+- Uploaden (knop of bestanden/mappen vanuit Verkenner slepen), downloaden (ook hele mappen), nieuwe map, hernoemen, verwijderen (mappen met inhoud), pad kopiëren.
+- Dubbelklikken op een bestand opent een kopie met het standaardprogramma van Windows.
+- Voortgang met snelheid en een knop om een overdracht te annuleren; half overgezette bestanden worden opgeruimd.
+- Symbolische links: hernoemen en verwijderen raken alleen de link, nooit het doel.
+
 ### Beheer
 - **Groepen en subgroepen** met eigen kleur; verplaatsen met slepen en neerzetten.
 - Een hele groep in één keer openen.

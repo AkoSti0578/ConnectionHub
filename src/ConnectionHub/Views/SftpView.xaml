@@ -1,0 +1,153 @@
+<UserControl x:Class="ConnectionHub.Views.SftpView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource WindowBrush}"
+             Foreground="{StaticResource TextBrush}">
+    <UserControl.Resources>
+        <Style x:Key="ToolButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+            <Setter Property="Padding" Value="9,6" />
+            <Setter Property="Margin" Value="0,0,2,0" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <Border Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal">
+                    <Button Style="{StaticResource IconButton}" Content="&#xE74A;" Click="OnUp" ToolTip="Bovenliggende map (Backspace)" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE80F;" Click="OnHome" ToolTip="Thuismap" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE72C;" Click="OnRefresh" ToolTip="Vernieuwen (F5)" />
+                </StackPanel>
+
+                <TextBox x:Name="PathBox" Grid.Column="1" Margin="8,0" FontFamily="Cascadia Mono, Consolas" KeyDown="OnPathKeyDown"
+                         ToolTip="Typ een pad en druk op Enter" />
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Style="{StaticResource ToolButton}" Click="OnUpload" ToolTip="Bestanden uploaden (of sleep ze hierheen)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE898;" Margin="0,0,7,0" />
+                            <TextBlock Text="Uploaden" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource ToolButton}" Click="OnDownload" ToolTip="Selectie downloaden">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE896;" Margin="0,0,7,0" />
+                            <TextBlock Text="Downloaden" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE8F4;" Click="OnNewFolder" ToolTip="Nieuwe map" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE8AC;" Click="OnRename" ToolTip="Hernoemen (F2)" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE74D;" Click="OnDelete" ToolTip="Verwijderen (Del)" />
+                    <CheckBox x:Name="HiddenCheck" Content="Verborgen" Margin="10,0,0,0" Checked="OnHiddenChanged" Unchecked="OnHiddenChanged"
+                              ToolTip="Bestanden die met een punt beginnen tonen" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- File list -->
+        <ListView x:Name="FileList" Grid.Row="1" SelectionMode="Extended" AllowDrop="True" Margin="6,4,6,0"
+                  MouseDoubleClick="OnItemDoubleClick" KeyDown="OnListKeyDown"
+                  DragEnter="OnDragOver" DragOver="OnDragOver" Drop="OnDrop">
+            <ListView.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Openen" Click="OnOpen">
+                        <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE8E5;" /></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Downloaden…" Click="OnDownload">
+                        <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE896;" /></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Uploaden…" Click="OnUpload">
+                        <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE898;" /></MenuItem.Icon>
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem Header="Nieuwe map" Click="OnNewFolder">
+                        <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE8F4;" /></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Hernoemen" InputGestureText="F2" Click="OnRename">
+                        <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE8AC;" /></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Pad kopiëren" Click="OnCopyPath">
+                        <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE8C8;" /></MenuItem.Icon>
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem Header="Verwijderen" InputGestureText="Del" Click="OnDelete">
+                        <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE74D;" Foreground="{StaticResource DangerBrush}" /></MenuItem.Icon>
+                    </MenuItem>
+                </ContextMenu>
+            </ListView.ContextMenu>
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Naam" Width="380">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="4,0,0,0">
+                                    <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" Foreground="{Binding GlyphBrush}" FontSize="15" Margin="0,0,10,0" />
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text=" ↗" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center"
+                                               Visibility="{Binding Item.IsSymbolicLink, Converter={StaticResource BoolToVisibility}}" ToolTip="Symbolische link" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Grootte" Width="100">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding SizeText}" Foreground="{StaticResource SubTextBrush}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Gewijzigd" Width="150">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding ModifiedText}" Foreground="{StaticResource SubTextBrush}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Rechten" Width="110">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Item.Permissions}" FontFamily="Cascadia Mono, Consolas" Foreground="{StaticResource SubTextBrush}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <!-- Overlay for connecting / empty folder / errors -->
+        <StackPanel x:Name="Overlay" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False" Margin="24">
+            <TextBlock x:Name="OverlayIcon" Style="{StaticResource Icon}" Text="&#xE8B7;" FontSize="34" Foreground="{StaticResource MutedTextBrush}" />
+            <TextBlock x:Name="OverlayText" Margin="0,12,0,0" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{StaticResource SubTextBrush}" MaxWidth="520" />
+        </StackPanel>
+
+        <!-- Status / transfer bar -->
+        <Border Grid.Row="2" Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="14,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="StatusText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{StaticResource SubTextBrush}" FontSize="12" />
+                <StackPanel x:Name="TransferPanel" Grid.Column="1" Orientation="Horizontal" Visibility="Collapsed">
+                    <TextBlock x:Name="TransferText" VerticalAlignment="Center" FontSize="12" Margin="0,0,10,0" MaxWidth="380" TextTrimming="CharacterEllipsis" />
+                    <ProgressBar x:Name="TransferProgressBar" Width="180" Maximum="1" VerticalAlignment="Center" />
+                    <Button Style="{StaticResource TabCloseButton}" Content="&#xE711;" Margin="8,0,0,0" Click="OnCancelTransfer" ToolTip="Annuleren" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

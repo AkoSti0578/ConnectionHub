@@ -29,6 +29,11 @@
                       CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
                 <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE768;" /></MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="Bestanden (SFTP)" Command="{Binding OpenSftpCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      Visibility="{Binding PlacementTarget.DataContext.Protocol, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource SshOnlyVisibility}}">
+                <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE8B7;" /></MenuItem.Icon>
+            </MenuItem>
             <MenuItem Header="Extra sessie openen" Command="{Binding OpenNewSessionCommand}"
                       CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
                 <MenuItem.Icon><TextBlock Style="{StaticResource MenuIcon}" Text="&#xE710;" /></MenuItem.Icon>
@@ -284,7 +289,7 @@
                                             </Grid.ColumnDefinitions>
                                             <Grid Width="16" Margin="0,0,9,0" VerticalAlignment="Center">
                                                 <TextBlock Style="{StaticResource Icon}" FontSize="13"
-                                                           Text="{Binding Protocol, Converter={StaticResource ProtocolToGlyph}}"
+                                                           Text="{Binding Glyph}"
                                                            Foreground="{Binding Protocol, Converter={StaticResource ProtocolToBrush}}" />
                                                 <Ellipse Width="7" Height="7" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-3,-3"
                                                          Fill="{Binding State, Converter={StaticResource StateToBrush}}"
@@ -314,6 +319,9 @@
                     <!-- Active session actions -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,10,0" DataContext="{Binding ActiveSession}"
                                 Visibility="{Binding Converter={StaticResource NullToCollapsed}}">
+                        <Button Style="{StaticResource IconButton}" Content="&#xE8B7;" ToolTip="Bestanden van deze server (SFTP)"
+                                Command="{Binding DataContext.OpenSftpCommand, ElementName=Root}" CommandParameter="{Binding}"
+                                Visibility="{Binding CanOpenSftp, Converter={StaticResource BoolToVisibility}}" />
                         <Button Style="{StaticResource IconButton}" Content="&#xE72C;" Command="{Binding ReconnectCommand}" ToolTip="Opnieuw verbinden" />
                         <Button Style="{StaticResource IconButton}" Content="&#xE8CD;" Command="{Binding DisconnectCommand}" ToolTip="Verbinding verbreken" />
                         <Button Style="{StaticResource IconButton}" Content="&#xE740;" Command="{Binding FullScreenCommand}" ToolTip="Volledig scherm (RDP, Ctrl+Alt+Break om terug te keren)" />

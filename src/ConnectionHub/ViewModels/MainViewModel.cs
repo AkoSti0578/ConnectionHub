@@ -31,6 +31,16 @@ public sealed class MainViewModel : ObservableObject
         NewConnectionCommand = new RelayCommand(p => NewConnection(TargetGroup(p)));
         NewGroupCommand = new RelayCommand(p => NewGroup(TargetGroup(p)));
         ConnectCommand = new RelayCommand(p => Connect(ItemFrom(p)));
+        OpenSftpCommand = new RelayCommand(p =>
+        {
+            var entry = p switch
+            {
+                ConnectionItemViewModel c => c.Model,
+                SessionViewModel s => s.Entry,
+                _ => (SelectedItem as ConnectionItemViewModel)?.Model
+            };
+            if (entry is { Protocol: ConnectionProtocol.Ssh }) OpenSftp(entry);
+        });
         OpenNewSessionCommand = new RelayCommand(p =>
         {
             if (ItemFrom(p) is ConnectionItemViewModel c) OpenSession(c.Model);
@@ -68,6 +78,7 @@ public sealed class MainViewModel : ObservableObject
     public ICommand NewGroupCommand { get; }
     public ICommand ConnectCommand { get; }
     public ICommand OpenNewSessionCommand { get; }
+    public ICommand OpenSftpCommand { get; }
     public ICommand ConnectExternalCommand { get; }
     public ICommand ConnectExternalMultiMonitorCommand { get; }
     public ICommand EditCommand { get; }
@@ -450,7 +461,18 @@ public sealed class MainViewModel : ObservableObject
     }
 
     /// <summary>The open session for a saved connection, if any (the most recently opened one).</summary>
-    public SessionViewModel? FindSession(Guid connectionId) => Sessions.LastOrDefault(s => s.Entry.Id == connectionId);
+    public SessionViewModel? FindSession(Guid connectionId) => Sessions.LastOrDefault(s => s.Entry.Id == connectionId && !s.IsSftp);
+
+    /// <summary>Opens the SFTP browser for an SSH connection, or switches to it when it is already open.</summary>
+    public void OpenSftp(ConnectionEntry entry)
+    {
+        if (Sessions.LastOrDefault(s => s.Entry.Id == entry.Id && s.IsSftp) is { } open)
+        {
+            ActiveSession = open;
+            return;
+        }
+        AddSession(new SessionViewModel(entry, new SftpView(entry)), activate: true);
+    }
 
     /// <summary>Switches to the open session of a connection instead of opening a new one. Returns false when none is open.</summary>
     public bool ActivateExistingSession(TreeItemViewModel? item)
@@ -479,7 +501,11 @@ public sealed class MainViewModel : ObservableObject
     public void OpenSession(ConnectionEntry entry, bool activate = true)
     {
         ISessionView view = entry.Protocol == ConnectionProtocol.Rdp ? new RdpSessionView(entry) : new TerminalView(entry);
-        var session = new SessionViewModel(entry, view);
+        AddSession(new SessionViewModel(entry, view), activate);
+    }
+
+    private void AddSession(SessionViewModel session, bool activate)
+    {
         Sessions.Add(session);
         if (activate || ActiveSession == null) ActiveSession = session;
         session.Start();
